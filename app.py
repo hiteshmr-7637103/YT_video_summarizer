@@ -1,12 +1,19 @@
 from flask import Flask, render_template, request
+from dotenv import load_dotenv
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 import cohere
 import time
+import os
 
 app = Flask(__name__)
 
-# Your Cohere API key
-cohere_client = cohere.Client("VtlDJ4ZdiGUAp5zWZFPw1dYqmC5UKYWs5nWfNujp")
+load_dotenv()
+COHERE_API_KEY = os.getenv("CO_API_KEY")
+
+# print("Loaded Key:", os.getenv("CO_API_KEY"))
+
+# Cohere API key
+cohere_client = cohere.Client(COHERE_API_KEY)
 
 # --- Helper functions ---
 def extract_video_id(url):
@@ -24,12 +31,12 @@ def fetch_transcript(video_url):
         try:
             transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
         except NoTranscriptFound:
-            print("⚠️ English transcript not found, trying fallback options...")
+            print("English transcript not found, trying fallback options...")
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
             transcript = transcript_list.find_transcript(['en', 'ta', 'hi', 'auto'])
             transcript = transcript.fetch()
         except TranscriptsDisabled:
-            print("❌ Transcripts are disabled for this video.")
+            print("Transcripts are disabled for this video.")
             return None
 
         full_text = " ".join([item["text"] for item in transcript])
@@ -64,7 +71,7 @@ def chunk_text(text, max_chars=4000):
 def summarize_text(text):
     try:
         if len(text) < 4000:
-            print("📄 Using single request for short transcript")
+            print("Using single request for short transcript")
             response = cohere_client.summarize(
                 text=text,
                 length="medium",
@@ -73,7 +80,7 @@ def summarize_text(text):
             )
             return response.summary
         else:
-            print("📄 Transcript too long. Chunking and summarizing in parts...")
+            print("Transcript too long. Chunking and summarizing in parts...")
             chunks = chunk_text(text)
             partial_summaries = []
 
@@ -113,7 +120,7 @@ def index():
             transcript_preview = transcript[:1000]
             summary = summarize_text(transcript)
         else:
-            error = "❌ Could not fetch transcript. Make sure the video has captions and is publicly accessible."
+            error = "Could not fetch transcript. Make sure the video has captions and is publicly accessible."
 
     return render_template("index.html", summary=summary, transcript=transcript_preview, error=error)
 

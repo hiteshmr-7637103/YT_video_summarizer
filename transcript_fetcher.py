@@ -1,7 +1,11 @@
 from youtube_transcript_api import YouTubeTranscriptApi
+from dotenv import load_dotenv
 import cohere
+import os
 
-COHERE_API_KEY = "VtlDJ4ZdiGUAp5zWZFPw1dYqmC5UKYWs5nWfNujp"
+load_dotenv()
+
+COHERE_API_KEY = os.getenv("API_KEY")
 
 
 # import re
